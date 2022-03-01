@@ -15,6 +15,12 @@
  */
 package com.example.android.architecture.blueprints.todoapp.tasks
 
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.isToggleable
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import androidx.test.espresso.Espresso.onView
@@ -25,7 +31,6 @@ import androidx.test.espresso.action.ViewActions.replaceText
 import androidx.test.espresso.action.ViewActions.typeText
 import androidx.test.espresso.assertion.ViewAssertions.doesNotExist
 import androidx.test.espresso.assertion.ViewAssertions.matches
-import androidx.test.espresso.matcher.ViewMatchers.hasSibling
 import androidx.test.espresso.matcher.ViewMatchers.isChecked
 import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import androidx.test.espresso.matcher.ViewMatchers.withContentDescription
@@ -44,24 +49,25 @@ import com.example.android.architecture.blueprints.todoapp.util.EspressoIdlingRe
 import com.example.android.architecture.blueprints.todoapp.util.deleteAllTasksBlocking
 import com.example.android.architecture.blueprints.todoapp.util.monitorActivity
 import com.example.android.architecture.blueprints.todoapp.util.saveTaskBlocking
-import org.hamcrest.Matchers.allOf
 import org.hamcrest.core.IsNot.not
 import org.junit.After
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
  * Large End-to-End test for the tasks module.
- *
- * UI tests usually use [ActivityTestRule] but there's no API to perform an action before
- * each test. The workaround is to use `ActivityScenario.launch()` and `ActivityScenario.close()`.
  */
 @RunWith(AndroidJUnit4::class)
 @LargeTest
 class TasksActivityTest {
 
     private lateinit var repository: TasksRepository
+
+    @get:Rule
+    val composeTestRule = createAndroidComposeRule<TasksActivity>()
+    private val activity by lazy { composeTestRule.activity }
 
     // An Idling Resource that waits for Data Binding to have no pending bindings
     private val dataBindingIdlingResource = DataBindingIdlingResource()
@@ -138,7 +144,8 @@ class TasksActivityTest {
         dataBindingIdlingResource.monitorActivity(activityScenario)
 
         // Add active task
-        onView(withId(R.id.add_task_fab)).perform(click())
+        composeTestRule.onNodeWithContentDescription(activity.getString(R.string.add_task))
+            .performClick()
         onView(withId(R.id.add_task_title_edit_text))
             .perform(typeText("TITLE1"), closeSoftKeyboard())
         onView(withId(R.id.add_task_description_edit_text)).perform(typeText("DESCRIPTION"))
@@ -204,8 +211,7 @@ class TasksActivityTest {
         ).perform(click())
 
         // Check that the task is marked as completed
-        onView(allOf(withId(R.id.complete_checkbox), hasSibling(withText(taskTitle))))
-            .check(matches(isChecked()))
+        composeTestRule.onNode(isToggleable()).assertIsOn()
         // Make sure the activity is closed before resetting the db:
         activityScenario.close()
     }
@@ -233,8 +239,7 @@ class TasksActivityTest {
         ).perform(click())
 
         // Check that the task is marked as active
-        onView(allOf(withId(R.id.complete_checkbox), hasSibling(withText(taskTitle))))
-            .check(matches(not(isChecked())))
+        composeTestRule.onNode(isToggleable()).assertIsOff()
         // Make sure the activity is closed before resetting the db:
         activityScenario.close()
     }
@@ -264,8 +269,7 @@ class TasksActivityTest {
         ).perform(click())
 
         // Check that the task is marked as active
-        onView(allOf(withId(R.id.complete_checkbox), hasSibling(withText(taskTitle))))
-            .check(matches(not(isChecked())))
+        composeTestRule.onNode(isToggleable()).assertIsOff()
         // Make sure the activity is closed before resetting the db:
         activityScenario.close()
     }
@@ -295,8 +299,7 @@ class TasksActivityTest {
         ).perform(click())
 
         // Check that the task is marked as active
-        onView(allOf(withId(R.id.complete_checkbox), hasSibling(withText(taskTitle))))
-            .check(matches(isChecked()))
+        composeTestRule.onNode(isToggleable()).assertIsOn()
         // Make sure the activity is closed before resetting the db:
         activityScenario.close()
     }
@@ -308,7 +311,8 @@ class TasksActivityTest {
         dataBindingIdlingResource.monitorActivity(activityScenario)
 
         // Click on the "+" button, add details, and save
-        onView(withId(R.id.add_task_fab)).perform(click())
+        composeTestRule.onNodeWithContentDescription(activity.getString(R.string.add_task))
+            .performClick()
         onView(withId(R.id.add_task_title_edit_text))
             .perform(typeText("title"), closeSoftKeyboard())
         onView(withId(R.id.add_task_description_edit_text)).perform(typeText("description"))

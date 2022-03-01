@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 The Android Open Source Project
+ * Copyright (C) 2022 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,20 +24,17 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.widget.PopupMenu
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
-import com.example.android.architecture.blueprints.todoapp.EventObserver
 import com.example.android.architecture.blueprints.todoapp.R
 import com.example.android.architecture.blueprints.todoapp.data.Task
-import com.example.android.architecture.blueprints.todoapp.databinding.TasksFragBinding
 import com.example.android.architecture.blueprints.todoapp.util.getViewModelFactory
-import com.example.android.architecture.blueprints.todoapp.util.setupRefreshLayout
-import com.example.android.architecture.blueprints.todoapp.util.setupSnackbar
-import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.android.material.snackbar.Snackbar
-import timber.log.Timber
+import com.google.accompanist.appcompattheme.AppCompatTheme
 
 /**
  * Display a grid of [Task]s. User can choose to view all, active or completed tasks.
@@ -48,20 +45,34 @@ class TasksFragment : Fragment() {
 
     private val args: TasksFragmentArgs by navArgs()
 
-    private lateinit var viewDataBinding: TasksFragBinding
-
-    private lateinit var listAdapter: TasksAdapter
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        viewDataBinding = TasksFragBinding.inflate(inflater, container, false).apply {
-            viewmodel = viewModel
-        }
         setHasOptionsMenu(true)
-        return viewDataBinding.root
+
+        return ComposeView(requireContext()).apply {
+            // Dispose of the Composition when the view's LifecycleOwner is destroyed
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            setContent {
+                AppCompatTheme {
+                    TasksScreen(
+                        viewModel = viewModel,
+                        userMessage = args.userMessage,
+                        onAddTask = { navigateToAddNewTask() },
+                        onTaskClick = { openTaskDetails(it.id) }
+                    )
+                }
+            }
+        }
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        arguments?.let {
+            viewModel.showEditResultMessage(args.userMessage)
+        }
     }
 
     override fun onOptionsItemSelected(item: MenuItem) =
@@ -85,34 +96,6 @@ class TasksFragment : Fragment() {
         inflater.inflate(R.menu.tasks_fragment_menu, menu)
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
-        // Set the lifecycle owner to the lifecycle of the view
-        viewDataBinding.lifecycleOwner = this.viewLifecycleOwner
-        setupSnackbar()
-        setupListAdapter()
-        setupRefreshLayout(viewDataBinding.refreshLayout, viewDataBinding.tasksList)
-        setupNavigation()
-        setupFab()
-    }
-
-    private fun setupNavigation() {
-        viewModel.openTaskEvent.observe(viewLifecycleOwner, EventObserver {
-            openTaskDetails(it)
-        })
-        viewModel.newTaskEvent.observe(viewLifecycleOwner, EventObserver {
-            navigateToAddNewTask()
-        })
-    }
-
-    private fun setupSnackbar() {
-        view?.setupSnackbar(viewLifecycleOwner, viewModel.snackbarText, Snackbar.LENGTH_SHORT)
-        arguments?.let {
-            viewModel.showEditResultMessage(args.userMessage)
-        }
-    }
-
     private fun showFilteringPopUpMenu() {
         val view = activity?.findViewById<View>(R.id.menu_filter) ?: return
         PopupMenu(requireContext(), view).run {
@@ -132,15 +115,6 @@ class TasksFragment : Fragment() {
         }
     }
 
-    // TODO: Move this to databinding
-    private fun setupFab() {
-        requireView().findViewById<FloatingActionButton>(R.id.add_task_fab)?.let {
-            it.setOnClickListener {
-                navigateToAddNewTask()
-            }
-        }
-    }
-
     private fun navigateToAddNewTask() {
         val action = TasksFragmentDirections
             .actionTasksFragmentToAddEditTaskFragment(
@@ -153,15 +127,5 @@ class TasksFragment : Fragment() {
     private fun openTaskDetails(taskId: String) {
         val action = TasksFragmentDirections.actionTasksFragmentToTaskDetailFragment(taskId)
         findNavController().navigate(action)
-    }
-
-    private fun setupListAdapter() {
-        val viewModel = viewDataBinding.viewmodel
-        if (viewModel != null) {
-            listAdapter = TasksAdapter(viewModel)
-            viewDataBinding.tasksList.adapter = listAdapter
-        } else {
-            Timber.w("ViewModel not initialized when attempting to set up adapter.")
-        }
     }
 }
