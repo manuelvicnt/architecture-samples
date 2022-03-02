@@ -23,6 +23,7 @@ import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -32,9 +33,6 @@ import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.IdlingRegistry
 import androidx.test.espresso.action.ViewActions.click
-import androidx.test.espresso.assertion.ViewAssertions.doesNotExist
-import androidx.test.espresso.assertion.ViewAssertions.matches
-import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import androidx.test.espresso.matcher.ViewMatchers.withContentDescription
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.espresso.matcher.ViewMatchers.withText
@@ -116,7 +114,11 @@ class TasksActivityTest {
         composeTestRule.waitForIdle()
 
         // Click on the task on the list and verify that all the data is correct
-        onView(withText("TITLE1")).perform(click())
+        composeTestRule.waitUntil {
+            composeTestRule.onAllNodesWithText("TITLE1").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeTestRule.onNodeWithText("TITLE1").performClick()
+
         composeTestRule.onNodeWithText("TITLE1").assertIsDisplayed()
         composeTestRule.onNodeWithText("DESCRIPTION").assertIsDisplayed()
         composeTestRule.onNode(isToggleable()).assertIsOff()
@@ -130,9 +132,9 @@ class TasksActivityTest {
             .performClick()
 
         // Verify task is displayed on screen in the task list.
-        onView(withText("NEW TITLE")).check(matches(isDisplayed()))
+        composeTestRule.onNodeWithText("NEW TITLE").assertIsDisplayed()
         // Verify previous task is not displayed
-        onView(withText("TITLE1")).check(doesNotExist())
+        composeTestRule.onNodeWithText("TITLE1").assertDoesNotExist()
     }
 
     @Test
@@ -148,14 +150,14 @@ class TasksActivityTest {
             .performClick()
 
         // Open it in details view
-        onView(withText("TITLE1")).perform(click())
+        composeTestRule.onNodeWithText("TITLE1").performClick()
         // Click delete task in menu
         onView(withId(R.id.menu_delete)).perform(click())
 
         // Verify it was deleted
         onView(withId(R.id.menu_filter)).perform(click())
         onView(withText(R.string.nav_all)).perform(click())
-        onView(withText("TITLE1")).check(doesNotExist())
+        composeTestRule.onNodeWithText("TITLE1").assertDoesNotExist()
     }
 
     @Test
@@ -167,15 +169,18 @@ class TasksActivityTest {
         composeTestRule.waitForIdle()
 
         // Open the second task in details view
-        onView(withText("TITLE2")).perform(click())
+        composeTestRule.waitUntil {
+            composeTestRule.onAllNodesWithText("TITLE2").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeTestRule.onNodeWithText("TITLE2").performClick()
         // Click delete task in menu
         onView(withId(R.id.menu_delete)).perform(click())
 
         // Verify only one task was deleted
         onView(withId(R.id.menu_filter)).perform(click())
         onView(withText(R.string.nav_all)).perform(click())
-        onView(withText("TITLE1")).check(matches(isDisplayed()))
-        onView(withText("TITLE2")).check(doesNotExist())
+        composeTestRule.onNodeWithText("TITLE1").assertIsDisplayed()
+        composeTestRule.onNodeWithText("TITLE2").assertDoesNotExist()
     }
 
     @Test
@@ -188,7 +193,10 @@ class TasksActivityTest {
         composeTestRule.waitForIdle()
 
         // Click on the task on the list
-        onView(withText(taskTitle)).perform(click())
+        composeTestRule.waitUntil {
+            composeTestRule.onAllNodesWithText(taskTitle).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeTestRule.onNodeWithText(taskTitle).performClick()
 
         // Click on the checkbox in task details screen
         composeTestRule.onNode(isToggleable()).performClick()
@@ -214,7 +222,11 @@ class TasksActivityTest {
         composeTestRule.waitForIdle()
 
         // Click on the task on the list
-        onView(withText(taskTitle)).perform(click())
+        composeTestRule.waitUntil {
+            composeTestRule.onAllNodesWithText(taskTitle).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeTestRule.onNodeWithText(taskTitle, useUnmergedTree = true).performClick()
+
         // Click on the checkbox in task details screen
         composeTestRule.onNode(isToggleable()).performClick()
 
@@ -239,7 +251,11 @@ class TasksActivityTest {
         composeTestRule.waitForIdle()
 
         // Click on the task on the list
-        onView(withText(taskTitle)).perform(click())
+        composeTestRule.waitUntil {
+            composeTestRule.onAllNodesWithText(taskTitle).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeTestRule.onNodeWithText(taskTitle).performClick()
+
         // Click on the checkbox in task details screen
         composeTestRule.onNode(isToggleable()).performClick()
         // Click again to restore it to original state
@@ -266,7 +282,10 @@ class TasksActivityTest {
         composeTestRule.waitForIdle()
 
         // Click on the task on the list
-        onView(withText(taskTitle)).perform(click())
+        composeTestRule.waitUntil {
+            composeTestRule.onAllNodesWithText(taskTitle).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeTestRule.onNodeWithText(taskTitle).performClick()
         // Click on the checkbox in task details screen
         composeTestRule.onNode(isToggleable()).performClick()
         // Click again to restore it to original state
@@ -296,7 +315,10 @@ class TasksActivityTest {
             .performClick()
 
         // Then verify task is displayed on screen
-        onView(withText("title")).check(matches(isDisplayed()))
+        composeTestRule.waitUntil {
+            composeTestRule.onAllNodesWithText("title").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeTestRule.onNodeWithText("title").assertIsDisplayed()
     }
 
     private fun findTextField(textId: Int): SemanticsNodeInteraction {

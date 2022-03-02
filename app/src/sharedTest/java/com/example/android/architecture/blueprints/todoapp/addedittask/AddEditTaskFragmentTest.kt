@@ -103,10 +103,10 @@ class AddEditTaskFragmentTest {
 
         // THEN - Verify that we navigated back to the tasks screen.
         composeTestRule.waitForIdle()
-        assertEquals(
-            findNavController(activity, R.id.nav_host_fragment).currentDestination?.id,
-            R.id.tasks_fragment_dest
-        )
+        composeTestRule.waitUntil {
+            findNavController(activity, R.id.nav_host_fragment)
+                .currentDestination?.id == R.id.tasks_fragment_dest
+        }
     }
 
     @Test

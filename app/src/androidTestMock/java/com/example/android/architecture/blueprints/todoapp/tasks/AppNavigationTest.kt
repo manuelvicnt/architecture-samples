@@ -18,6 +18,7 @@ package com.example.android.architecture.blueprints.todoapp.tasks
 import android.view.Gravity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -33,10 +34,8 @@ import androidx.test.espresso.contrib.DrawerActions.open
 import androidx.test.espresso.contrib.DrawerMatchers.isClosed
 import androidx.test.espresso.contrib.DrawerMatchers.isOpen
 import androidx.test.espresso.contrib.NavigationViewActions.navigateTo
-import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import androidx.test.espresso.matcher.ViewMatchers.withContentDescription
 import androidx.test.espresso.matcher.ViewMatchers.withId
-import androidx.test.espresso.matcher.ViewMatchers.withText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import com.example.android.architecture.blueprints.todoapp.R
@@ -184,7 +183,11 @@ class AppNavigationTest {
         composeTestRule.waitForIdle()
 
         // Click on the task on the list
-        onView(withText("UI <- button")).perform(click())
+        composeTestRule.waitUntil {
+            composeTestRule.onAllNodesWithText("UI <- button").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeTestRule.onNodeWithText("UI <- button").performClick()
+
         // Click on the edit task button
         composeTestRule.onNodeWithContentDescription(activity.getString(R.string.edit_task))
             .performClick()
@@ -203,7 +206,7 @@ class AppNavigationTest {
                 composeTestRule.activityRule.scenario.getToolbarNavigationContentDescription()
             )
         ).perform(click())
-        composeTestRule.onNodeWithText("All tasks").assertIsDisplayed()
+        composeTestRule.onNodeWithText("All Tasks").assertIsDisplayed()
     }
 
     @Test
@@ -215,7 +218,10 @@ class AppNavigationTest {
         composeTestRule.waitForIdle()
 
         // Click on the task on the list
-        onView(withText("Back button")).perform(click())
+        composeTestRule.waitUntil {
+            composeTestRule.onAllNodesWithText("Back button").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeTestRule.onNodeWithText("Back button").performClick()
         // Click on the edit task button
         composeTestRule.onNodeWithContentDescription(activity.getString(R.string.edit_task))
             .performClick()
@@ -226,6 +232,6 @@ class AppNavigationTest {
 
         // Confirm that if we click back a second time, we end up back at the home screen
         pressBack()
-        composeTestRule.onNodeWithText("All tasks").assertIsDisplayed()
+        composeTestRule.onNodeWithText("All Tasks").assertIsDisplayed()
     }
 }
