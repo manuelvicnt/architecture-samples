@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 The Android Open Source Project
+ * Copyright (C) 2022 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,13 @@
  */
 package com.example.android.architecture.blueprints.todoapp.taskdetail
 
-import androidx.fragment.app.testing.launchFragmentInContainer
-import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.assertion.ViewAssertions.matches
-import androidx.test.espresso.matcher.ViewMatchers.isChecked
-import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
-import androidx.test.espresso.matcher.ViewMatchers.withId
-import androidx.test.espresso.matcher.ViewMatchers.withText
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.isToggleable
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.navigation.Navigation.findNavController
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import com.example.android.architecture.blueprints.todoapp.R
@@ -29,12 +29,13 @@ import com.example.android.architecture.blueprints.todoapp.ServiceLocator
 import com.example.android.architecture.blueprints.todoapp.data.Task
 import com.example.android.architecture.blueprints.todoapp.data.source.FakeRepository
 import com.example.android.architecture.blueprints.todoapp.data.source.TasksRepository
+import com.example.android.architecture.blueprints.todoapp.tasks.TasksActivity
 import com.example.android.architecture.blueprints.todoapp.util.saveTaskBlocking
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
-import org.hamcrest.core.IsNot.not
 import org.junit.After
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -47,6 +48,9 @@ import org.junit.runner.RunWith
 class TaskDetailFragmentTest {
 
     private lateinit var repository: TasksRepository
+
+    @get:Rule
+    val composeTestRule = createAndroidComposeRule<TasksActivity>()
 
     @Before
     fun initRepository() {
@@ -66,18 +70,14 @@ class TaskDetailFragmentTest {
         repository.saveTaskBlocking(activeTask)
 
         // WHEN - Details fragment launched to display task
-        val bundle = TaskDetailFragmentArgs(activeTask.id).toBundle()
-        launchFragmentInContainer<TaskDetailFragment>(bundle, R.style.AppTheme)
+        launchFragment(activeTask)
 
         // THEN - Task details are displayed on the screen
         // make sure that the title/description are both shown and correct
-        onView(withId(R.id.task_detail_title_text)).check(matches(isDisplayed()))
-        onView(withId(R.id.task_detail_title_text)).check(matches(withText("Active Task")))
-        onView(withId(R.id.task_detail_description_text)).check(matches(isDisplayed()))
-        onView(withId(R.id.task_detail_description_text)).check(matches(withText("AndroidX Rocks")))
+        composeTestRule.onNodeWithText("Active Task").assertIsDisplayed()
+        composeTestRule.onNodeWithText("AndroidX Rocks").assertIsDisplayed()
         // and make sure the "active" checkbox is shown unchecked
-        onView(withId(R.id.task_detail_complete_checkbox)).check(matches(isDisplayed()))
-        onView(withId(R.id.task_detail_complete_checkbox)).check(matches(not(isChecked())))
+        composeTestRule.onNode(isToggleable()).assertIsOff()
     }
 
     @Test
@@ -87,17 +87,23 @@ class TaskDetailFragmentTest {
         repository.saveTaskBlocking(completedTask)
 
         // WHEN - Details fragment launched to display task
-        val bundle = TaskDetailFragmentArgs(completedTask.id).toBundle()
-        launchFragmentInContainer<TaskDetailFragment>(bundle, R.style.AppTheme)
+        launchFragment(completedTask)
 
         // THEN - Task details are displayed on the screen
         // make sure that the title/description are both shown and correct
-        onView(withId(R.id.task_detail_title_text)).check(matches(isDisplayed()))
-        onView(withId(R.id.task_detail_title_text)).check(matches(withText("Completed Task")))
-        onView(withId(R.id.task_detail_description_text)).check(matches(isDisplayed()))
-        onView(withId(R.id.task_detail_description_text)).check(matches(withText("AndroidX Rocks")))
+        composeTestRule.onNodeWithText("Completed Task").assertIsDisplayed()
+        composeTestRule.onNodeWithText("AndroidX Rocks").assertIsDisplayed()
         // and make sure the "active" checkbox is shown unchecked
-        onView(withId(R.id.task_detail_complete_checkbox)).check(matches(isDisplayed()))
-        onView(withId(R.id.task_detail_complete_checkbox)).check(matches(isChecked()))
+        composeTestRule.onNode(isToggleable()).assertIsOn()
+    }
+
+    private fun launchFragment(activeTask: Task) {
+        val bundle = TaskDetailFragmentArgs(activeTask.id).toBundle()
+        composeTestRule.activityRule.scenario.onActivity {
+            findNavController(it, R.id.nav_host_fragment).apply {
+                setGraph(R.navigation.nav_graph)
+                navigate(R.id.task_detail_fragment_dest, bundle)
+            }
+        }
     }
 }
