@@ -18,6 +18,7 @@ package com.example.android.architecture.blueprints.todoapp.tasks
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isToggleable
@@ -33,8 +34,6 @@ import androidx.test.espresso.IdlingRegistry
 import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.assertion.ViewAssertions.doesNotExist
 import androidx.test.espresso.assertion.ViewAssertions.matches
-import androidx.test.espresso.matcher.ViewMatchers.hasSibling
-import androidx.test.espresso.matcher.ViewMatchers.isChecked
 import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import androidx.test.espresso.matcher.ViewMatchers.withContentDescription
 import androidx.test.espresso.matcher.ViewMatchers.withId
@@ -51,8 +50,6 @@ import com.example.android.architecture.blueprints.todoapp.util.EspressoIdlingRe
 import com.example.android.architecture.blueprints.todoapp.util.deleteAllTasksBlocking
 import com.example.android.architecture.blueprints.todoapp.util.monitorActivity
 import com.example.android.architecture.blueprints.todoapp.util.saveTaskBlocking
-import org.hamcrest.Matchers.allOf
-import org.hamcrest.core.IsNot.not
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -143,7 +140,8 @@ class TasksActivityTest {
         dataBindingIdlingResource.monitorActivity(composeTestRule.activityRule.scenario)
 
         // Add active task
-        onView(withId(R.id.add_task_fab)).perform(click())
+        composeTestRule.onNodeWithContentDescription(activity.getString(R.string.add_task))
+            .performClick()
         findTextField(R.string.title_hint).performTextInput("TITLE1")
         findTextField(R.string.description_hint).performTextInput("DESCRIPTION")
         composeTestRule.onNodeWithContentDescription(activity.getString(R.string.cd_save_task))
@@ -203,8 +201,7 @@ class TasksActivityTest {
         ).perform(click())
 
         // Check that the task is marked as completed
-        onView(allOf(withId(R.id.complete_checkbox), hasSibling(withText(taskTitle))))
-            .check(matches(isChecked()))
+        composeTestRule.onNode(isToggleable()).assertIsOn()
     }
 
     @Test
@@ -229,8 +226,7 @@ class TasksActivityTest {
         ).perform(click())
 
         // Check that the task is marked as active
-        onView(allOf(withId(R.id.complete_checkbox), hasSibling(withText(taskTitle))))
-            .check(matches(not(isChecked())))
+        composeTestRule.onNode(isToggleable()).assertIsOff()
     }
 
     @Test
@@ -257,8 +253,7 @@ class TasksActivityTest {
         ).perform(click())
 
         // Check that the task is marked as active
-        onView(allOf(withId(R.id.complete_checkbox), hasSibling(withText(taskTitle))))
-            .check(matches(not(isChecked())))
+        composeTestRule.onNode(isToggleable()).assertIsOff()
     }
 
     @Test
@@ -285,8 +280,7 @@ class TasksActivityTest {
         ).perform(click())
 
         // Check that the task is marked as active
-        onView(allOf(withId(R.id.complete_checkbox), hasSibling(withText(taskTitle))))
-            .check(matches(isChecked()))
+        composeTestRule.onNode(isToggleable()).assertIsOn()
     }
 
     @Test
@@ -294,7 +288,8 @@ class TasksActivityTest {
         dataBindingIdlingResource.monitorActivity(composeTestRule.activityRule.scenario)
 
         // Click on the "+" button, add details, and save
-        onView(withId(R.id.add_task_fab)).perform(click())
+        composeTestRule.onNodeWithContentDescription(activity.getString(R.string.add_task))
+            .performClick()
         findTextField(R.string.title_hint).performTextInput("title")
         findTextField(R.string.description_hint).performTextInput("description")
         composeTestRule.onNodeWithContentDescription(activity.getString(R.string.cd_save_task))
